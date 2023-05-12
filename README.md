@@ -76,6 +76,7 @@ The script will prompt for the password used for encryption and generate the key
     If no files are found in the current directory or the specified files, the script will exit.
     If the password provided is different from the one saved in the .password.sha256 file (if exists), the script will prompt for confirmation before continuing.
     The script generates a 16-byte salt by default and saves it in the .salt file. You can specify a custom salt file using the -s, --salt option.
+    Every time you encrypt one or all file(s) and no encrypted files are in the current directory, the script will generate new salt.
     The generated key is derived from the password and the salt using the Argon2 key derivation function.
     The encrypted files will have the extension .enc added to their original filenames.
     The decrypted files will have the .enc extension removed from their original filenames.
