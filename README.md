@@ -57,7 +57,7 @@ After entering the password, you will have the option to print the SHA-256 hash 
 
 Saving the SHA-256 hash of the password can be useful when decrypting files and wanting to encrypt them again. If the entered password does not match the SHA-256 hash saved in '.password.sha256', the script will issue a warning, preventing accidental encryption with a mistyped password. However, note that storing the hash introduces the risk of someone potentially cracking the password if they gain access to the hash file.
 
-Exercise caution when deciding whether to save the password hash, as it introduces a trade-off between convenience and security.
+Exercise caution when deciding whether to save the password hash, as it introduces a trade-off between convenience and security. If you don´t wanna be prompted for this, use the ´-nh´ option.
 
 
 
