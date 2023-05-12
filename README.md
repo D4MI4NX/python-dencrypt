@@ -53,6 +53,13 @@ python dencrypt.py -m e [options]
 
 The script will prompt for a password (maximum 32 characters) and generate a key using Argon2 key derivation function. The generated key will be used for file encryption. By default, the script encrypts all files in the current directory, excluding certain ignored files such as hidden ones (files that start with a ´.´). You can also specify a single file to encrypt using the -F, --file option.
 
+After entering the password, you will have the option to print the SHA-256 hash of the password or save it to a file. If you enter 'y', the script will print the SHA-256 hash of the password. If you enter 's', it will save the hash to a file named '.password.sha256' in the current directory. If you enter 'n', the script will continue without saving or printing the hash.
+
+Saving the SHA-256 hash of the password can be useful when decrypting files and wanting to encrypt them again. If the entered password does not match the SHA-256 hash saved in '.password.sha256', the script will issue a warning, preventing accidental encryption with a mistyped password. However, note that storing the hash introduces the risk of someone potentially cracking the password if they gain access to the hash file.
+
+Exercise caution when deciding whether to save the password hash, as it introduces a trade-off between convenience and security.
+
+
 
 # Decrypting Files
 
