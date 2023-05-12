@@ -80,4 +80,4 @@ The script will prompt for the password used for encryption and generate the key
     The generated key is derived from the password and the salt using the Argon2 key derivation function.
     The encrypted files will have the extension .enc added to their original filenames.
     The decrypted files will have the .enc extension removed from their original filenames.
-    If any errors occur during encryption or decryption, the script will display the error and restore the original files.
+    If the encryption or decryption is cancelled (CTRL + c) during its process, the script will restore the original file.
