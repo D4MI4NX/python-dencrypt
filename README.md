@@ -86,4 +86,4 @@ The script will prompt for the password used for encryption and generate the key
     
 # License
 
-This script is released under the GLP-3 License.
+This script is released under the GPL-3.0 license.
