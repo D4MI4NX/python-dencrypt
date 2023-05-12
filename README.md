@@ -81,3 +81,9 @@ The script will prompt for the password used for encryption and generate the key
     The encrypted files will have the extension .enc added to their original filenames.
     The decrypted files will have the .enc extension removed from their original filenames.
     If the encryption or decryption is cancelled (CTRL + c) during its process, the script will restore the original file.
+    
+    
+    
+# License
+
+This script is released under the GLP-3 License.
