@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-accepted_license=True
+accepted_license=False
 
 if not accepted_license:
     print('''Dencrypt is a python script for file encryption and decryption. It uses AES encryption with CBC mode and Argon2 key derivation function for secure encryption.
