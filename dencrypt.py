@@ -187,7 +187,7 @@ def prompt_password(confirm=False):
 
 files = []
 enc_files = []
-ignored_files = [os.path.basename(__file__), "dencrypt.py", "dencrypt.exe", "dencrypt", "dencrypt.c", "dencrypt_win.py", "dencrypt_argon2", "dencrypt_kdf2", "LICENSE", "README.md"]
+ignored_files = [os.path.basename(__file__), "dencrypt.py", "dencrypt.exe", "dencrypt", "dencrypt.c", "dencrypt_win.py", "dencrypt_argon2", "dencrypt_kdf2", "LICENSE", "README.md", "requirements.txt"]
 
 for file in os.listdir():
     if file not in ignored_files and os.path.isfile(file) and not file.startswith("."):
