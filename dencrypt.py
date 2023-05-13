@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-
-accepted_license=False
-
-if not accepted_license:
-    print('''Dencrypt is a python script for file encryption and decryption. It uses AES encryption with CBC mode and Argon2 key derivation function for secure encryption.
+'''Dencrypt is a python script for file encryption and decryption. It uses AES encryption with CBC mode and Argon2 key derivation function for secure encryption.
 
 Copyright (C) 2023  D4MI4NX
 
@@ -17,11 +13,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>
-
-
-To hide the license agreement change the 'accepted_license' variable's value to 'True'.
-    ''')
+along with this program.  If not, see <https://www.gnu.org/licenses/>'''
 
 # modules required: argparse, pycryptodome, tqdm, argon2, argon2-cffi, pwinput(optional)
 import os, hashlib, argparse
