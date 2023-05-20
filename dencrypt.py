@@ -29,11 +29,6 @@ try:
 except:
     passinput = "getpass"
 
-#path = os.path.dirname(os.path.abspath(__file__))
-#os.chdir(path)
-
-path = os.getcwd()
-
 verbose = True
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -46,7 +41,16 @@ parser.add_argument("-f", "--force", action="store_true", help = "Dont ask about
 parser.add_argument("-F", "--file", action="store", help = "En/Decrypt only a single file")
 parser.add_argument("-s", "--salt", action="store", help = "Specify file containing salt")
 parser.add_argument("-ns", "--no-salt", action="store_true", help = "Disable salt in key generation")
+parser.add_argument("-hs", "--home-salt", action="store_true", help = "Read or write salt from/to the home directory (~/.salt)")
+parser.add_argument("-sd", "--script-dir", action="store_true", help = "Use the directory the script is stored in")
 args = parser.parse_args()
+
+if args.script_dir:
+    path = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(path)
+else:
+    path = os.getcwd()
+home_dir = os.path.expanduser("~")
 
 if args.salt is not None and not args.no_salt:
     if not os.path.isfile(args.salt):
@@ -141,9 +145,10 @@ def file_loop(files, _mode, key):
 
 def gen_key(password, gensalt=False):
     if not args.no_salt:
+        salt_file = ".salt" if not args.home_salt else f"{home_dir}/.salt"
         if args.salt is None:
-            if os.path.isfile(".salt"):
-                salt = open(".salt", "rb").read()
+            if os.path.isfile(salt_file):
+                salt = open(salt_file, "rb").read()
         else:
             if os.path.isfile(args.salt):
                 salt = open(args.salt, "rb").read()
@@ -151,27 +156,41 @@ def gen_key(password, gensalt=False):
                 exit(".salt doesnt exists! Try specifying the salt file with the -s option.")
         if gensalt and args.salt is None:
             salt = os.urandom(16)
-            open(".salt", "wb").write(salt)
+            open(salt_file, "wb").write(salt)
     key = argon2.hash_password_raw(password, salt=b"1234567890123456" if args.no_salt else salt, time_cost=32, memory_cost=131072)
     return key
 
 def prompt_password(confirm=False):
     while True:
-        global plain_pass
         global password
+        global pass_sha
         pass_match = False
         password = pwinput("Password[max. 32 chars]: ") if passinput == "pwinput" else getpass("Password[max. 32 chars]: ")
+        pass_sha = hashlib.sha256(bytes(password, "utf-8")).hexdigest()
         if len(password) > 32:
             print("Password cant be longer than 32 characters!")
             continue
+        if os.path.isfile(".password.sha256") and mode == "e":
+            if open(".password.sha256", "r").read() == pass_sha:
+                confirm = False
+            else:
+                confirm = True
         if confirm:
             pass_confirm = pwinput("Confirm password: ") if passinput == "pwinput" else getpass("Confirm password: ")
-            if password == pass_confirm:
+            if password == pass_confirm and password != "":
                 pass_match = True
+            elif password == "" and pass_confirm == "":
+                inp = input("[E]xit or [c]ontinue with empty password?\n>")
+                if inp.lower() == "e":
+                    exit("[exited]")
+                elif inp.lower() == "c":
+                    pass_match = True
+                    print("Continueing with empty password!")
+                else:
+                    exit("[exited]")
             else:
                 print("Passwords didnt match. Please try again.")
         if len(password) <= 32 and pass_match if confirm else True:
-            plain_pass = password
             password = bytes(password, "utf-8")
             break
         pass_match = False
@@ -206,7 +225,6 @@ if mode.lower() == "e":
         else:
             exit(f"{args.file} not found or doesnt exists!")
     prompt_password(confirm=True)
-    pass_sha = hashlib.sha256(bytes(plain_pass, "utf-8")).hexdigest()
     if os.path.isfile(".password.sha256"):
         if open(".password.sha256", "r").read() != pass_sha and not args.otherpass:
             upa = input("Password is different from the one saved in .password.sha256.\nContinue? [y|n]\n>")
