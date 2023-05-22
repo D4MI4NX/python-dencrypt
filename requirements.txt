@@ -1,6 +1,5 @@
 argparse
 pycryptodome
 tqdm
-argon2
 argon2-cffi
 pwinput
