@@ -15,13 +15,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>'''
 
-# modules required: argparse, pycryptodome, tqdm, argon2, argon2-cffi, pwinput(optional)
+# modules required: argparse, pycryptodome, tqdm, argon2-cffi, pwinput(optional)
 import os, hashlib, argparse
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from getpass import getpass
 from tqdm import tqdm
 import argon2
+from glob import glob
 
 try:
     from pwinput import pwinput
@@ -30,13 +31,14 @@ except:
     passinput = "getpass"
 
 verbose = True
+no_hash = False # Set to True if you dont wanna be asked about printing/storing the SHA-256 hashed password
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-m", "--mode", action="store", help="Encrypt: e  Decrypt: d")
 parser.add_argument("-ph", "--phash", action="store_true", help = "Print SHA-256 of password")
 parser.add_argument("-sh", "--shash", action="store_true", help = "Save SHA-256 of password in a file")
 parser.add_argument("-nh", "--nhash", action="store_true", help = "Dont ask about hashed password")
-parser.add_argument("-op", "--otherpass", action="store_true", help = "Use other password than the one saved in .password.sha256")
+parser.add_argument("-op", "--other-pass", action="store_true", help = "Use other password than the one saved in .password.sha256")
 parser.add_argument("-f", "--force", action="store_true", help = "Dont ask about en/decrypting files")
 parser.add_argument("-F", "--file", action="store", help = "En/Decrypt only a single file")
 parser.add_argument("-s", "--salt", action="store", help = "Specify file containing salt")
@@ -45,12 +47,18 @@ parser.add_argument("-hs", "--home-salt", action="store_true", help = "Read or w
 parser.add_argument("-sd", "--script-dir", action="store_true", help = "Use the directory the script is stored in")
 args = parser.parse_args()
 
+if no_hash:
+    args.nhash = True
+
 if args.script_dir:
     path = os.path.dirname(os.path.abspath(__file__))
     os.chdir(path)
 else:
     path = os.getcwd()
 home_dir = os.path.expanduser("~")
+
+if args.home_salt and args.salt is not None:
+    exit("Use either -hs/--home-salt or -s/--salt, but not both!")
 
 if args.salt is not None and not args.no_salt:
     if not os.path.isfile(args.salt):
@@ -72,7 +80,7 @@ def encrypt_file(key, file):
         os.rename(file, new_file)
         return 0
     except KeyboardInterrupt:
-        print("\nRestoring file...")
+        print(f"\nRestoring {file}...")
         with open(file, "wb") as f:
             f.write(plaintext)
         print(f"Restored {file}!")
@@ -199,31 +207,74 @@ def prompt_password(confirm=False):
 files = []
 enc_files = []
 ignored_files = [os.path.basename(__file__), "dencrypt.py", "dencrypt.exe", "dencrypt", "dencrypt.c", "dencrypt_win.py", "dencrypt_argon2", "dencrypt_kdf2", "LICENSE", "README.md", "requirements.txt"]
+mode_prompt = True
 
-for file in os.listdir():
-    if file not in ignored_files and os.path.isfile(file) and not file.startswith("."):
-        if ".enc" in file:
-            enc_files.append(file)
-        else:
+if args.file is None:
+    for file in os.listdir():
+        if file not in ignored_files and os.path.isfile(file) and not file.startswith("."):
             files.append(file)
+else:
+    if "*" in args.file:
+        files = glob(args.file)
+        for file in files.copy():
+            if file in ignored_files or not os.path.isfile(file):
+                files.remove(file)
+    elif "," in args.file:
+        files = args.file.split(",")
+        for file in files.copy():
+            if file in ignored_files or not os.path.isfile(file):
+                files.remove(file)
     else:
-        continue
+        if ".enc" in args.file:
+            mode = "d"
+        else:
+            mode = "e"
+        if not os.path.isfile(args.file):
+            exit(f"{args.file} not found!")
+        files = [args.file]
+        mode_prompt = False
+    if len(files) == 1:
+        if ".enc" in files[0]:
+            mode = "d"
+        else:
+            mode = "e"
+        mode_prompt = False
 
 if len(files) == 0 and len(enc_files) == 0:
     exit(f"No files found!")
 
-mode = input("[E]ncrypt or [D]ecrypt?\n>") if args.mode is None and args.file is None else (args.mode if args.file is None else ("d" if ".enc" in args.file else "e"))
+for file in files.copy():
+    if ".enc" in file:
+        enc_files.append(file)
+        files.remove(file)
+
+if len(files) > 0 and len(enc_files) < 1:
+    mode = "e"
+    mode_prompt = False
+elif len(files) < 1 and len(enc_files) > 0:
+    mode = "d"
+    mode_prompt = False
+
+
+if mode_prompt and args.mode is None:
+    mode = input("[E]ncrypt or [D]ecrypt?\n>")
+elif args.mode is not None:
+    mode = args.mode
+mode = mode.lower()
+
 if mode.lower() not in ["e", "d"]:
     exit("[exited]")
+
+if mode == "e" and len(files) < 1:
+    exit("No selected files are not encrypted!")
+
+if args.home_salt and mode == "d":
+    if not os.path.isfile(f"{home_dir}/.salt"):
+        exit(f"No salt found in {home_dir}/.salt !")
 
 if mode.lower() == "e":
     if len(enc_files) > 0 and len(files) == 0:
         exit("All files are already encrypted!")
-    if args.file is not None:
-        if os.path.isfile(args.file):
-            files = [args.file]
-        else:
-            exit(f"{args.file} not found or doesnt exists!")
     prompt_password(confirm=True)
     if os.path.isfile(".password.sha256"):
         if open(".password.sha256", "r").read() != pass_sha and not args.otherpass:
@@ -256,11 +307,6 @@ if mode.lower() == "d":
     if len(enc_files) <= 0:
         exit("No files are encrypted!")
     files = enc_files
-    if args.file is not None:
-        if os.path.isfile(args.file):
-            files = [args.file]
-        else:
-            exit(f"{args.file} not found or doesnt exists!")
     prompt_password()
     print(files)
     inp = input("\nDecrypt these files? [y|n]\n>") if not args.force else "y"
