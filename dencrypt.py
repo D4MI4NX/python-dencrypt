@@ -38,7 +38,7 @@ parser.add_argument("-m", "--mode", action="store", help="Encrypt: e  Decrypt: d
 parser.add_argument("-ph", "--phash", action="store_true", help = "Print SHA-256 of password")
 parser.add_argument("-sh", "--shash", action="store_true", help = "Save SHA-256 of password in a file")
 parser.add_argument("-nh", "--nhash", action="store_true", help = "Dont ask about hashed password")
-parser.add_argument("-op", "--other-pass", action="store_true", help = "Use other password than the one saved in .password.sha256")
+parser.add_argument("-op", "--otherpass", action="store_true", help = "Use other password than the one saved in .password.sha256")
 parser.add_argument("-f", "--force", action="store_true", help = "Dont ask about en/decrypting files")
 parser.add_argument("-F", "--file", action="store", help = "En/Decrypt only a single file")
 parser.add_argument("-s", "--salt", action="store", help = "Specify file containing salt")
