@@ -42,7 +42,7 @@ parser.add_argument("-op", "--otherpass", action="store_true", help = "Use other
 parser.add_argument("-f", "--force", action="store_true", help = "Dont ask about en/decrypting files")
 parser.add_argument("-F", "--file", action="store", help = "En/Decrypt only a single file")
 parser.add_argument("-s", "--salt", action="store", help = "Specify file containing salt")
-parser.add_argument("-ns", "--no-salt", action="store_true", help = "Disable salt in key generation")
+parser.add_argument("-hcs", "--hard-coded-salt", action="store_true", help = "Use hard-coded salt in key generation")
 parser.add_argument("-hs", "--home-salt", action="store_true", help = "Read or write salt from/to the home directory (~/.salt)")
 parser.add_argument("-sd", "--script-dir", action="store_true", help = "Use the directory the script is stored in")
 args = parser.parse_args()
@@ -60,7 +60,7 @@ home_dir = os.path.expanduser("~")
 if args.home_salt and args.salt is not None:
     exit("Use either -hs/--home-salt or -s/--salt, but not both!")
 
-if args.salt is not None and not args.no_salt:
+if args.salt is not None and not args.hard_coded_salt:
     if not os.path.isfile(args.salt):
         exit("File containing salt not found!")
 
@@ -85,6 +85,8 @@ def encrypt_file(key, file):
             f.write(plaintext)
         print(f"Restored {file}!")
         return 2
+    except PermissionError:
+        return 13
     except:
         return 1
 
@@ -112,39 +114,28 @@ def decrypt_file(key, file):
             f.write(ciphertext)
         print(f"Restored {file}!")
         return 2
+    except PermissionError:
+        return 13
     except:
         return 1
 
 def file_loop(files, _mode, key):
     error = False
     error_files = []
-    if _mode == "e":
-        for file in tqdm(files, desc="Encrypting files"):
-            if verbose: print(f"Encrypting {file}...")
-            func = encrypt_file(key, file)
-            if func != 0:
-                error = True
-                error_files.append(file)
-            if func == 1:
-                print("Unknown error!")
-            elif func == 2:
-                exit()
-            else:
-                if verbose: print(f"Encrypted {file}!")
-
-    if _mode == "d":
-        for file in tqdm(files, "Decrypting files"):
-            if verbose: print(f"Decrypting {file}...")
-            func = decrypt_file(key, file)
-            if func != 0:
-                error = True
-                error_files.append(file)
-            if func == 1:
-                print("Unknown error!")
-            elif func == 2:
-                exit()
-            else:
-                if verbose: print(f"Decrypted {file}!")
+    for file in tqdm(files, desc="Encrypting files" if mode == "e" else "Decrypting files"):
+        if verbose: print(f"Encrypting {file}..." if mode == "e" else f"Decrypting {file}...")
+        func = encrypt_file(key, file) if mode == "e" else decrypt_file(key, file)
+        if func != 0:
+            error = True
+            error_files.append(file)
+        if func == 1:
+            print("Unknown error!")
+        elif func == 2:
+            exit()
+        elif func == 13:
+            print("Permission denied!")
+        else:
+            if verbose: print(f"{'Encrypted' if mode == 'e' else 'Decrypted'} {file}!")
 
     if not error:
         print(f"Successfully {'encrypted' if _mode == 'e' else 'decrypted'} files!")
@@ -152,11 +143,13 @@ def file_loop(files, _mode, key):
         print(f"{error_files} {'have' if len(files) > 1 else 'has'} encountered an error!")
 
 def gen_key(password, gensalt=False):
-    if not args.no_salt:
+    if not args.hard_coded_salt:
         salt_file = ".salt" if not args.home_salt else f"{home_dir}/.salt"
         if args.salt is None:
             if os.path.isfile(salt_file):
                 salt = open(salt_file, "rb").read()
+            elif args.hard_coded_salt is None:
+                exit(".salt not found!")
         else:
             if os.path.isfile(args.salt):
                 salt = open(args.salt, "rb").read()
@@ -165,7 +158,7 @@ def gen_key(password, gensalt=False):
         if gensalt and args.salt is None:
             salt = os.urandom(16)
             open(salt_file, "wb").write(salt)
-    key = argon2.hash_password_raw(password, salt=b"1234567890123456" if args.no_salt else salt, time_cost=32, memory_cost=131072)
+    key = argon2.hash_password_raw(password, salt=b"1234567890123456" if args.hard_coded_salt else salt, time_cost=32, memory_cost=131072)
     return key
 
 def prompt_password(confirm=False):
