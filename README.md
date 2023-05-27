@@ -39,7 +39,7 @@ The script supports the following command-line options:
     -f, --force: Don't ask about encrypting or decrypting files.
     -F, --file: Encrypt or decrypt a single file.
     -s, --salt: Specify a file containing the salt for key generation.
-    -ns, --no-salt: Disable salt in key generation.
+    -hcs, --hard-coded-salt: Use hard-coded salt in key generation.
     -hs, --home-salt: Read or write salt from/to the home directory (~/.salt).
     -sd, --script-dir: Use the directory the script is stored in.
 
